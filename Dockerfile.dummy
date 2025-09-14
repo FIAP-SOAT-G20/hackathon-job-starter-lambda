@@ -1,0 +1,12 @@
+# Use a minimal base image
+FROM busybox:latest
+
+# Set an environment variable directly in the Dockerfile
+ENV MY_DOCKERFILE_VAR="Hello from Dockerfile!"
+
+# Set another environment variable with a default value that can be overridden by ARG
+ARG BUILD_VAR_DEFAULT="Default Build Value"
+ENV MY_BUILD_VAR=${BUILD_VAR_DEFAULT}
+
+# Define a command to execute when the container starts
+CMD ["sh", "-c", "echo \"Dockerfile variable: $MY_DOCKERFILE_VAR\" && echo \"Build variable: $MY_BUILD_VAR\" && echo \"Runtime variable: $MY_RUNTIME_VAR\" && sleep 5m"]
