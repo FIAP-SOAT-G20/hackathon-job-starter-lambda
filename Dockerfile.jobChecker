@@ -1,4 +1,4 @@
-FROM golang:1.24.5-alpine
+FROM golang:1.25.0-alpine
 
 RUN apk update &&\
 	apk upgrade &&\
@@ -9,7 +9,5 @@ WORKDIR /app
 COPY . ./
 
 RUN CGO_ENABLED=0 go build -a -installsuffix cgo -o job-checker ./cmd/job/checker/main.go
-
-COPY /kube/config /root/.kube/config
 
 CMD ["/app/job-checker"]
