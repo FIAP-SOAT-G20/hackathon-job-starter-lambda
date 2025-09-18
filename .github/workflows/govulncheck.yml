@@ -17,3 +17,5 @@ jobs:
           go-version: stable
       - name: golangci-lint
         uses: golang/govulncheck-action@v1
+        with:
+          version: latest
