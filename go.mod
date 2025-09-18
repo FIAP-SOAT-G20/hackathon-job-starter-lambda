@@ -1,6 +1,6 @@
 module github.com/FIAP-SOAT-G20/hackathon-job-starter-lambda
 
-go 1.24.5
+go 1.25
 
 require (
 	github.com/aws/aws-lambda-go v1.49.0
