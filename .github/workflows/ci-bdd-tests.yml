@@ -1,0 +1,101 @@
+name: ci/bdd-tests
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  godog:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📦 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🚀 Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24'
+        cache: true
+
+    - name: ️ Create .env file
+      run: cp .env.example .env
+
+    - name: 📦 Download Go modules
+      run: go mod download
+
+    - name: 🧪 Run BDD tests
+      id: bdd-tests
+      run: go test -test.v -test.run ^TestFeatures$ ./tests
+      continue-on-error: true
+      env:
+        # Testcontainers configuration for CI
+        TESTCONTAINERS_RYUK_DISABLED: true
+        TESTCONTAINERS_CHECKS_DISABLE: true
+
+    - name: 📊 Upload test results and logs
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: bdd-test-results
+        path: |
+          tests/features/
+          tests/*.go
+          *.log
+        retention-days: 7
+
+    - name: 📋 Generate BDD test summary
+      if: always()
+      id: test-summary
+      run: |
+        # Determine test status based on BDD test step outcome
+        if [ "${{ steps.bdd-tests.outcome }}" = "success" ]; then
+          TEST_STATUS="✅ PASSED"
+          STATUS_ICON="✅"
+        else
+          TEST_STATUS="❌ FAILED"
+          STATUS_ICON="❌"
+        fi
+        
+        # Create test summary
+        cat > bdd_summary.md << EOF
+        ## 🧪 BDD Test Results
+        
+        **Status:** $TEST_STATUS
+        
+        ### 📁 Feature Files Tested:
+        - **Order Management** (\`order.feature\`)
+        
+        ### 🎯 Test Scenarios:
+        - $STATUS_ICON **List some orders with status "RECEIVED"
+        - $STATUS_ICON **Retrieve an existing order** - Tests order retrieval by ID  
+        - $STATUS_ICON **Update an existing order** - Tests order status updates
+        
+        ### 🔧 Test Framework:
+        - **BDD Framework:** Gherkin + Godog
+        - **Database:** PostgreSQL (via Testcontainers)
+        - **Test Environment:** Mock HTTP handlers with Gin
+        
+        ---
+        _Automated BDD tests ensure business requirements are met through behavior-driven scenarios._
+        EOF
+        
+        # Also add to step summary
+        cat bdd_summary.md >> $GITHUB_STEP_SUMMARY
+        
+        # Set output for PR comment
+        echo "SUMMARY_CONTENT<<EOF" >> $GITHUB_OUTPUT
+        cat bdd_summary.md >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: 💬 Comment BDD test results on PR
+      if: always() && github.event_name == 'pull_request'
+      uses: thollander/actions-comment-pull-request@v3
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        comment-tag: bdd-test-results
+        message: ${{ steps.test-summary.outputs.SUMMARY_CONTENT }}

@@ -22,6 +22,7 @@ type JobInput struct {
 	Envs                    map[string]string
 	BackOffLimit            int32
 	ImageChecker            string
+	ServiceAccountName      string
 }
 
 type K8sAPI struct {
@@ -66,29 +67,15 @@ func (k *K8sAPI) CreateJob(ctx context.Context, jobInput *JobInput) error {
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
 						{
-							Name:            "job-checker-" + jobInput.JobName,
-							Image:           jobInput.ImageChecker,
-							ImagePullPolicy: v1.PullIfNotPresent,
-							Env: []v1.EnvVar{
-								{
-									Name:  "JOB_NAME",
-									Value: jobInput.JobName,
-								},
-								{
-									Name:  "NAMESPACE",
-									Value: jobInput.Namespace,
-								},
-							},
-						},
-						{
 							Name:            jobInput.JobName,
 							Image:           jobInput.Image,
 							ImagePullPolicy: v1.PullIfNotPresent,
 							Env:             envVars,
 						},
 					},
-					RestartPolicy:    v1.RestartPolicyOnFailure,
-					ImagePullSecrets: imagePullSecrets,
+					RestartPolicy:      v1.RestartPolicyNever,
+					ImagePullSecrets:   imagePullSecrets,
+					ServiceAccountName: jobInput.ServiceAccountName,
 				},
 			},
 			BackoffLimit: &backOffLimit,
@@ -99,6 +86,46 @@ func (k *K8sAPI) CreateJob(ctx context.Context, jobInput *JobInput) error {
 	if err != nil {
 		log.Error().Err(err).Any("job", finalJobName).Any("namespace", jobInput.Namespace).Msg("Error creating job")
 		return err
+	}
+
+	watch, err := k.Client.BatchV1().
+		Jobs(jobInput.Namespace).
+		Watch(ctx, metav1.ListOptions{
+			FieldSelector: "metadata.name=" + finalJobName,
+		})
+	for event := range watch.ResultChan() {
+		job := event.Object.(*batchv1.Job)
+		if job.Status.Active > 0 {
+			log.Info().Any("job", finalJobName).Any("namespace", jobInput.Namespace).Msg("Job started successfully")
+			break
+		}
+		if job.Status.Failed > 0 {
+			log.Info().
+				Any("job", finalJobName).
+				Any("namespace", jobInput.Namespace).
+				Err(fmt.Errorf("job failed")).
+				Int32("failedPods", job.Status.Failed).
+				Msg("Job failed")
+
+			pods, _ := k.Client.CoreV1().Pods(jobInput.Namespace).List(ctx, metav1.ListOptions{
+				LabelSelector: "job-name=" + finalJobName,
+			})
+			for _, pod := range pods.Items {
+				for _, cs := range pod.Status.ContainerStatuses {
+					if cs.State.Terminated != nil {
+						log.Error().
+							Str("job", finalJobName).
+							Str("namespace", jobInput.Namespace).
+							Str("pod", pod.Name).
+							Int32("exitCode", cs.State.Terminated.ExitCode).
+							Str("reason", cs.State.Terminated.Reason).
+							Str("message", cs.State.Terminated.Message).
+							Msg("Job failed with container error")
+					}
+				}
+			}
+			return fmt.Errorf("job failed")
+		}
 	}
 
 	log.Info().Any("job", finalJobName).Any("namespace", jobInput.Namespace).Msg("Job created successfully")
@@ -112,11 +139,11 @@ func validateParams(namespace, jobName, image, cmd string) error {
 	return nil
 }
 
-func (k *K8sAPI) GetJobStatus(ctx context.Context, jobName, namespace string) (string, error) {
+func (k *K8sAPI) GetLastJobStatus(ctx context.Context, jobName, namespace string) (string, error) {
 	jobs := k.Client.BatchV1().Jobs(namespace)
 	job, err := jobs.Get(ctx, jobName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
-	return string(job.Status.Conditions[0].Type), nil
+	return string(job.Status.Conditions[len(job.Status.Conditions)-1].Type), nil
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/FIAP-SOAT-G20/hackathon-job-starter-lambda/internal/infrastructure/api"
+	"github.com/FIAP-SOAT-G20/hackathon-job-starter-lambda/internal/infrastructure/aws/s3"
 	"github.com/FIAP-SOAT-G20/hackathon-job-starter-lambda/internal/infrastructure/aws/sns"
 	"github.com/FIAP-SOAT-G20/hackathon-job-starter-lambda/internal/infrastructure/config"
 	"github.com/FIAP-SOAT-G20/hackathon-job-starter-lambda/internal/infrastructure/k8s"
@@ -25,6 +26,7 @@ type Infrastructure struct {
 	JobConfig    *config.JobConfig
 	Logger       *logger.Logger
 	SNS          *sns.SNS
+	S3           *s3.S3
 }
 
 var infrastructure *Infrastructure
@@ -53,6 +55,7 @@ func init() {
 		JobConfig:    jobConfig,
 		Logger:       l,
 		SNS:          sns.NewSNS(cfg),
+		S3:           s3.NewS3(cfg),
 	}
 
 }

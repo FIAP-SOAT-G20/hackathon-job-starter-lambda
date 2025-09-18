@@ -1,51 +1,15 @@
-# Build stage
-FROM golang:1.24.5-alpine AS builder
+FROM golang:1.24.5-alpine
 
-# Install git and ca-certificates (needed for go mod download)
-RUN apk add --no-cache git ca-certificates
+RUN apk update &&\
+	apk upgrade &&\
+	apk add bash &&\
+    apk add aws-cli
 
-# Set working directory
 WORKDIR /app
+COPY . ./
 
-# Copy go mod files
-COPY go.mod go.sum ./
-
-# Download dependencies
-RUN go mod download
-
-# Copy source code
-COPY . .
-
-# Build the application
 RUN CGO_ENABLED=0 go build -a -installsuffix cgo -o job-checker ./cmd/job/checker/main.go
 
-# Final stage
-FROM alpine:latest
+COPY /kube/config /root/.kube/config
 
-# Install ca-certificates for HTTPS requests
-RUN apk --no-cache add ca-certificates
-
-# Create non-root user
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
-
-# Set working directory
-WORKDIR /app
-
-# Copy the binary from builder stage
-COPY --from=builder /app/job-checker .
-
-# Make the binary executable
-RUN chmod +x ./job-checker
-
-# Change ownership to non-root user
-RUN chown -R appuser:appgroup /app
-
-# Switch to non-root user
-USER appuser
-
-# Expose port (if needed)
-# EXPOSE 8080
-
-# Run the application
-CMD ["./job-checker"]
+CMD ["/app/job-checker"]

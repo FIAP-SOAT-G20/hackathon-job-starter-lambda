@@ -17,10 +17,11 @@ type LambdaConfig struct {
 
 	// K8S Settings
 	K8S struct {
-		Namespace   string
-		ContextName string
-		MasterUrl   string
-		Job         struct {
+		Namespace          string
+		ContextName        string
+		MasterUrl          string
+		ServiceAccountName string
+		Job                struct {
 			Prefix                  string
 			Image                   string
 			Command                 string
@@ -47,6 +48,8 @@ type LambdaConfig struct {
 type JobConfig struct {
 	JobName   string
 	Namespace string
+	VideoId   int64
+	UserId    int64
 }
 
 func LoadLambdaConfig() *LambdaConfig {
@@ -62,6 +65,7 @@ func LoadLambdaConfig() *LambdaConfig {
 	k8sImage := getEnv("K8S_JOB_IMAGE", "ghcr.io/fiap-soat-g20/hackathon-job-starter-lambda:latest")
 	k8sCommand := getEnv("K8S_JOB_COMMAND", "echo \"Hello, World\"")
 	k8sJobPrefix := getEnv("K8S_JOB_PREFIX", "video-processor")
+	k8sServiceAccountName := getEnv("K8S_SERVICE_ACCOUNT_NAME", "job-checker-sa")
 	k8sJobEnvs := getEnvsWithPrefix("K8S_JOB_ENV_")
 	k8sJobTtlSecondsAfterFinished, err := time.ParseDuration(getEnv("K8S_JOB_TTL_SECONDS_AFTER_FINISHED", "10s"))
 	if err != nil {
@@ -85,6 +89,7 @@ func LoadLambdaConfig() *LambdaConfig {
 
 	config.Environment = environment
 	config.K8S.Namespace = k8sNamespace
+	config.K8S.ServiceAccountName = k8sServiceAccountName
 	config.K8S.Job.Image = k8sImage
 	config.K8S.Job.Command = k8sCommand
 	config.K8S.Job.Prefix = k8sJobPrefix
@@ -104,9 +109,21 @@ func LoadLambdaConfig() *LambdaConfig {
 func LoadJobConfig() *JobConfig {
 	jobName := getEnv("JOB_NAME", "video-processor")
 	namespace := getEnv("JOB_NAMESPACE", "default")
+	videoId, err := strconv.ParseInt(getEnv("JOB_VIDEO_ID", "0"), 10, 64)
+	if err != nil {
+		log.Printf("Warning: JOB_VIDEO_ID is not a valid integer: %v. Setting to 0", err)
+		videoId = 0
+	}
+	userId, err := strconv.ParseInt(getEnv("JOB_USER_ID", "0"), 10, 64)
+	if err != nil {
+		log.Printf("Warning: JOB_USER_ID is not a valid integer: %v. Setting to 0", err)
+		userId = 0
+	}
 	return &JobConfig{
 		JobName:   jobName,
 		Namespace: namespace,
+		VideoId:   videoId,
+		UserId:    userId,
 	}
 }
 

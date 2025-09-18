@@ -1,15 +1,19 @@
 package port
 
-import "github.com/FIAP-SOAT-G20/hackathon-job-starter-lambda/internal/core/dto"
+import (
+	"context"
+
+	"github.com/FIAP-SOAT-G20/hackathon-job-starter-lambda/internal/core/dto"
+)
 
 type VideoUsecase interface {
-	UpdateVideoStatus(videoId int64, status dto.VideoProcessingStatus) error
+	UpdateVideoStatus(ctx context.Context, input dto.UpdateVideoStatusInput) error
 }
 
 type VideoGateway interface {
-	UpdateVideoStatus(videoId int64, status dto.VideoProcessingStatus) error
+	UpdateVideoStatus(ctx context.Context, input dto.UpdateVideoStatusInput) error
 }
 
 type VideoController interface {
-	UpdateVideoStatus(videoId int64, status dto.VideoProcessingStatus) error
+	UpdateVideoStatus(ctx context.Context, input dto.UpdateVideoStatusInput) error
 }

@@ -93,6 +93,12 @@ When developing with custom Docker images, you need to make them available to yo
    # Make the image available to minikube's Docker environment
    minikube image load dummy-image:latest
    minikube image load job-checker:latest
+   
+   kubectl create serviceaccount job-checker-sa -n video
+   kubectl create clusterrolebinding job-checker-binding --clusterrole=cluster-admin 
+
+   # To test the checker locally
+   kubectl run test-job-checker --image=job-checker:v3 --env="JOB_NAME=test-job" --env="NAMESPACE=video" --restart=Never -n video --image-pull-policy=Never --overrides='{"spec":{"serviceAccountName":"job-checker-sa"}}'
    ```
 
 3. **Configure Image Pull Policy**
