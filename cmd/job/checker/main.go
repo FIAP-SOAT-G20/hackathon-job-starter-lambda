@@ -20,7 +20,7 @@ func main() {
 	l := infra.Logger
 	jobConfig := infra.JobConfig
 	k8sAPI := infra.K8sAPI
-	videoUsecase := usecase.NewVideoUsecase(gateway.NewVideoGateway(*infra.SNS))
+	videoUsecase := usecase.NewVideoUsecase(gateway.NewVideoGateway(infra.SNS))
 	ctx := context.Background()
 
 	mdcLogger := l.With(
@@ -32,7 +32,7 @@ func main() {
 
 	updateVideoStatus(ctx, mdcLogger, videoUsecase, jobConfig, dto.VideoStatusUploaded)
 
-	var backoffLimit int = 0
+	var backoffLimit = 0
 	var jobPending = false
 
 	for {

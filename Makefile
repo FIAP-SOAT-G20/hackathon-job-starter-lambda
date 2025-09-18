@@ -108,7 +108,7 @@ clean: ## 🧹 Clean up binaries and coverage files
 .PHONY: lint
 lint: ## 🔍 Run linter
 	@echo "🟢 Running linter..."
-	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.7 run --out-format colored-line-number
+	@golangci-lint run
 	@echo
 
 .PHONY: migrate-create

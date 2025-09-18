@@ -12,10 +12,10 @@ import (
 )
 
 type VideoGateway struct {
-	sns sns.SNS
+	sns sns.SNSInterface
 }
 
-func NewVideoGateway(sns sns.SNS) port.VideoGateway {
+func NewVideoGateway(sns sns.SNSInterface) port.VideoGateway {
 	return &VideoGateway{sns: sns}
 }
 

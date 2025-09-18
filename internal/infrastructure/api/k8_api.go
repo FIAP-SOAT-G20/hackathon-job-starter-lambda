@@ -41,7 +41,7 @@ func (k *K8sAPI) CreateJob(ctx context.Context, jobInput *JobInput) error {
 
 	finalJobName := jobInput.JobName
 	jobs := k.Client.BatchV1().Jobs(jobInput.Namespace)
-	var backOffLimit int32 = jobInput.BackOffLimit
+	var backOffLimit = jobInput.BackOffLimit
 
 	envVars := make([]v1.EnvVar, 0)
 	if jobInput.Envs != nil {
@@ -55,7 +55,7 @@ func (k *K8sAPI) CreateJob(ctx context.Context, jobInput *JobInput) error {
 	}
 
 	imagePullSecrets := make([]v1.LocalObjectReference, 0)
-	var ttlSecondsAfterFinished int32 = int32(jobInput.TtlSecondsAfterFinished.Seconds())
+	var ttlSecondsAfterFinished = int32(jobInput.TtlSecondsAfterFinished.Seconds())
 	jobSpec := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      finalJobName,
@@ -93,6 +93,10 @@ func (k *K8sAPI) CreateJob(ctx context.Context, jobInput *JobInput) error {
 		Watch(ctx, metav1.ListOptions{
 			FieldSelector: "metadata.name=" + finalJobName,
 		})
+	if err != nil {
+		log.Error().Err(err).Any("job", finalJobName).Any("namespace", jobInput.Namespace).Msg("Error watching job")
+		return err
+	}
 	for event := range watch.ResultChan() {
 		job := event.Object.(*batchv1.Job)
 		if job.Status.Active > 0 {

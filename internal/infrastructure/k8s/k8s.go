@@ -13,8 +13,6 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-var currentContext = context.TODO()
-
 func ConnectToK8s(ctx context.Context, logger *logger.Logger, cfg *config.LambdaConfig) (*kubernetes.Clientset, error) {
 	logger.InfoContext(ctx, "Connecting to k8s")
 
