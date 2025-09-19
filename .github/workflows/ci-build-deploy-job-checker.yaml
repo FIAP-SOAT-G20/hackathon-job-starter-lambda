@@ -1,4 +1,4 @@
-name: ci/build-deploy-job-checker
+name: ci/unit-tests
 
 on:
   workflow_run:
