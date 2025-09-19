@@ -1,0 +1,23 @@
+# # Use a minimal base image
+# FROM busybox:latest
+
+# # Set an environment variable directly in the Dockerfile
+# ENV MY_DOCKERFILE_VAR="Hello from Dockerfile!"
+
+# # Set another environment variable with a default value that can be overridden by ARG
+# ARG BUILD_VAR_DEFAULT="Default Build Value"
+# ENV MY_BUILD_VAR=${BUILD_VAR_DEFAULT}
+
+# # Define a command to execute when the container starts
+# CMD ["sh", "-c", "echo \"Dockerfile variable: $MY_DOCKERFILE_VAR\" && echo \"Build variable: $MY_BUILD_VAR\" && echo \"Runtime variable: $MY_RUNTIME_VAR\" && sleep 5m"]
+
+
+FROM alpine:3.20
+
+# Use bash (optional, sh works too but bash is nicer for printf/loops)
+RUN apk add --no-cache bash
+
+CMD for i in $(seq 1 300); do \
+      printf "Elapsed: %02d:%02d\n" $((i/60)) $((i%60)); \
+      sleep 1; \
+    done

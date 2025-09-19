@@ -1,0 +1,13 @@
+FROM golang:1.25.0-alpine
+
+RUN apk update &&\
+	apk upgrade &&\
+	apk add bash &&\
+    apk add aws-cli
+
+WORKDIR /app
+COPY . ./
+
+RUN CGO_ENABLED=0 go build -a -installsuffix cgo -o job-checker ./cmd/job/checker/main.go
+
+CMD ["/app/job-checker"]
