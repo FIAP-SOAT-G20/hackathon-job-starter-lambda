@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  ECR_REPOSITORY: hackathon-job-checker
+  ECR_REPOSITORY_JOB_CHECKER: hackathon-job-checker
 
 jobs:
   build-and-push:
@@ -37,9 +37,9 @@ jobs:
 
       - name: Create ECR repository if it doesn't exist
         run: |
-          aws ecr describe-repositories --repository-names ${{ secrets.ECR_REPOSITORY }} --region ${{ secrets.AWS_REGION }} || \
+          aws ecr describe-repositories --repository-names ${{ secrets.ECR_REPOSITORY_JOB_CHECKER }} --region ${{ secrets.AWS_REGION }} || \
           aws ecr create-repository \
-            --repository-name ${{ secrets.ECR_REPOSITORY }} \
+            --repository-name ${{ secrets.ECR_REPOSITORY_JOB_CHECKER }} \
             --image-scanning-configuration scanOnPush=true \
             --image-tag-mutability MUTABLE \
             --region ${{ secrets.AWS_REGION }}
@@ -61,11 +61,11 @@ jobs:
           provenance: false
           push: true
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:latest
-            ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_JOB_CHECKER }}:latest
+            ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_JOB_CHECKER }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Output image URI
         id: output
-        run: echo "image-uri=${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:latest" >> $GITHUB_OUTPUT
+        run: echo "image-uri=${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_JOB_CHECKER }}:latest" >> $GITHUB_OUTPUT
