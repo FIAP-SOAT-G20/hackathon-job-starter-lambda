@@ -1,8 +1,8 @@
-name: ci/unit-tests
+name: ci/build-deploy-job-checker
 
 on:
   workflow_run:
-    workflows: [ "ci/bdd-tests" ]
+    workflows: [ "ci/unit-tests" ]
     types: [ completed ]
     branches: [ main ]
 
