@@ -8,6 +8,10 @@ RUN apk update &&\
 WORKDIR /app
 COPY . ./
 
+# Copy kube config to container home directory
+RUN mkdir -p /root/.kube && \
+    cp .kube/config /root/.kube/config
+
 RUN CGO_ENABLED=0 go build -a -installsuffix cgo -o job-starter ./cmd/job/starter/main.go
 
 CMD ["/app/job-starter"]

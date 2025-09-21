@@ -35,6 +35,17 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Update Kube Config
+        run: |
+            aws eks update-kubeconfig \
+            --name ${{ env.CLUSTER_NAME }} \
+            --region ${{ env.AWS_REGION }}
+  
+      - name: Copy Kube Config to project directory
+        run: |
+            mkdir -p .kube
+            cp ~/.kube/config .kube/config
+  
       - name: Create ECR repository if it doesn't exist
         run: |
           aws ecr describe-repositories --repository-names ${{ secrets.ECR_REPOSITORY_JOB_CHECKER }} --region ${{ secrets.AWS_REGION }} || \
