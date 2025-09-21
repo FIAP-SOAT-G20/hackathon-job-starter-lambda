@@ -37,14 +37,14 @@ jobs:
 
       - name: Update Kube Config
         run: |
-            aws eks update-kubeconfig \
-            --name ${{ env.CLUSTER_NAME }} \
-            --region ${{ env.AWS_REGION }}
+          aws eks update-kubeconfig \
+          --name ${{ env.CLUSTER_NAME }} \
+          --region ${{ env.AWS_REGION }}
   
       - name: Copy Kube Config to project directory
         run: |
-            mkdir -p .kube
-            cp ~/.kube/config .kube/config
+          mkdir -p .kube
+          cp ~/.kube/config .kube/config
   
       - name: Create ECR repository if it doesn't exist
         run: |
