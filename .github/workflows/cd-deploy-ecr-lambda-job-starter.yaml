@@ -1,4 +1,5 @@
-name: cd/deploy-ecr-lambda-job-starter
+name: ci/build-deploy-lambda-job-starter
+  #cd/deploy-ecr-lambda-job-starter
 
 on:
   workflow_dispatch:
