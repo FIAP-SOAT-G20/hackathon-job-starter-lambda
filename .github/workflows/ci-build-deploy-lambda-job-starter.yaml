@@ -77,8 +77,8 @@ jobs:
         id: output
         run: echo "image-uri=${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_JOB_STARTER }}:latest" >> $GITHUB_OUTPUT
       
-      - name: Update GitHub Repository Env using gh env
+      - name: Update GitHub Repository Env using gh variable
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh env set LAMBDA_JOB_STARTER_IMAGE_URI -b "${{ steps.output.outputs.image-uri }}" --repo ${{ github.repository }}
+          gh variable set LAMBDA_JOB_STARTER_IMAGE_URI -b "${{ steps.output.outputs.image-uri }}" --repo ${{ github.repository }}
