@@ -1,4 +1,4 @@
-name: ci/build-deploy-lambda-job-checker
+name: cd/deploy-ecr-lambda-job-checker
 
 on:
   workflow_dispatch:
@@ -7,12 +7,17 @@ on:
     types: [ completed ]
     branches: [ main ]
 
+permissions:
+  contents: read
+  id-token: write
+  actions: write
+
 env:
   ECR_REPOSITORY_JOB_CHECKER: hackathon-job-checker
 
 jobs:
   build-and-push:
-    name: Build and Push Docker Image
+    name: CD - Deploy Lambda Job Checker to ECR
     runs-on: ubuntu-latest
     if: |
       github.event.workflow_run.conclusion == 'success' &&
@@ -70,3 +75,9 @@ jobs:
       - name: Output image URI
         id: output
         run: echo "image-uri=${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_JOB_CHECKER }}:latest" >> $GITHUB_OUTPUT
+      
+      - name: Update GitHub Repository Env using gh env
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh env set LAMBDA_JOB_CHECKER_IMAGE_URI -b "${{ steps.output.outputs.image-uri }}" --repo ${{ github.repository }}
