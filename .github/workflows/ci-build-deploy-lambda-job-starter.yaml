@@ -2,10 +2,10 @@ name: ci/build-deploy-lambda-job-starter
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: [ "ci/unit-tests" ]
-    types: [ completed ]
-    branches: [ main ]
+  # workflow_run:
+  #   workflows: [ "ci/unit-tests" ]
+  #   types: [ completed ]
+  #   branches: [ main ]
 
 permissions:
   contents: read
