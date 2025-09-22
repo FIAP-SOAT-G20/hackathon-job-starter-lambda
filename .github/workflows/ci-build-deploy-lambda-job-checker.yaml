@@ -7,6 +7,11 @@ on:
     types: [ completed ]
     branches: [ main ]
 
+permissions:
+  contents: read
+  id-token: write
+  actions: write
+
 env:
   ECR_REPOSITORY_JOB_CHECKER: hackathon-job-checker
 
@@ -72,5 +77,7 @@ jobs:
         run: echo "image-uri=${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_JOB_CHECKER }}:latest" >> $GITHUB_OUTPUT
       
       - name: Update GitHub Organization Secret using gh secret
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh secret set LAMBDA_JOB_CHECKER_IMAGE_URI -b "${{ steps.output.outputs.image-uri }}"
+          gh secret set LAMBDA_JOB_CHECKER_IMAGE_URI -b "${{ steps.output.outputs.image-uri }}" --org ${{ github.repository_owner }}
