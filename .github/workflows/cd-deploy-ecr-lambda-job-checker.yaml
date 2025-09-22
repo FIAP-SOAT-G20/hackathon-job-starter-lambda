@@ -1,4 +1,4 @@
-name: ci/build-deploy-lambda-job-checker
+name: cd/deploy-ecr-lambda-job-checker
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build-and-push:
-    name: Build and Push Docker Image
+    name: CD - Deploy Lambda Job Checker to ECR
     runs-on: ubuntu-latest
     if: |
       github.event.workflow_run.conclusion == 'success' &&
