@@ -70,3 +70,7 @@ jobs:
       - name: Output image URI
         id: output
         run: echo "image-uri=${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_JOB_CHECKER }}:latest" >> $GITHUB_OUTPUT
+      
+      - name: Update GitHub Organization Secret using gh secret
+        run: |
+          gh secret set LAMBDA_JOB_CHECKER_IMAGE_URI -b "${{ steps.output.outputs.image-uri }}"
