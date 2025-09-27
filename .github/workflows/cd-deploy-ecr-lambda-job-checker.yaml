@@ -14,10 +14,11 @@ permissions:
 
 env:
   ECR_REPOSITORY_JOB_CHECKER: hackathon-job-checker
+  CLUSTER_NAME: hackathon-eks-cluster
 
 jobs:
   build-and-push:
-    name: CD - Deploy Lambda Job Checker to ECR
+    name: CD - Deploy Job Checker to ECR
     runs-on: ubuntu-latest
     if: |
       github.event.workflow_run.conclusion == 'success' &&
@@ -41,14 +42,9 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Create ECR repository if it doesn't exist
+      - name: Generate Kube Config
         run: |
-          aws ecr describe-repositories --repository-names ${{ secrets.ECR_REPOSITORY_JOB_CHECKER }} --region ${{ secrets.AWS_REGION }} || \
-          aws ecr create-repository \
-            --repository-name ${{ secrets.ECR_REPOSITORY_JOB_CHECKER }} \
-            --image-scanning-configuration scanOnPush=true \
-            --image-tag-mutability MUTABLE \
-            --region ${{ secrets.AWS_REGION }}
+          aws eks update-kubeconfig --name ${{ env.CLUSTER_NAME }} --region ${{ secrets.AWS_REGION }} --kubeconfig .kube/config
 
       - name: Login to Amazon ECR
         id: login-ecr
