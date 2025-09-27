@@ -8,8 +8,7 @@ RUN apk update &&\
 WORKDIR /app
 COPY . ./
 
-
-COPY .kube/config /root/.kube/config
+COPY .kube/config ~/.kube/config
 
 RUN CGO_ENABLED=0 go build -a -installsuffix cgo -o job-starter ./cmd/job/starter/main.go
 
