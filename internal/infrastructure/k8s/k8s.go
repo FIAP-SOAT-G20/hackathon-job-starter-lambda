@@ -32,9 +32,11 @@ func ConnectToK8s(ctx context.Context, logger *logger.Logger, cfg *config.Lambda
 		var kubeconfig string
 		if home := homedir.HomeDir(); home != "" {
 			kubeconfig = home + "/.kube/config"
+		} else {
+			kubeconfig = "/root/.kube/config"
 		}
 
-		logger.InfoContext(ctx, "Using kubeconfig", "kubeconfig", kubeconfig)
+		logger.InfoContext(ctx, "Using kubeconfig", "kubeconfig", kubeconfig, "homeDir", homedir.HomeDir())
 		if cfg.K8S.ContextName == "" {
 			config, err = clientcmd.BuildConfigFromFlags(cfg.K8S.MasterUrl, kubeconfig)
 		} else {
