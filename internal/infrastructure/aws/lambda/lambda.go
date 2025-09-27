@@ -61,7 +61,6 @@ func handleRequest(ctx context.Context, req events.S3Event) error {
 				"JOB_USER_ID":   strconv.FormatInt(infra.JobConfig.UserId, 10),
 			},
 			TtlSecondsAfterFinished: cfg.K8S.Job.TtlSecondsAfterFinished,
-			ImageChecker:            cfg.K8S.Job.ImageChecker,
 		})
 		if err != nil {
 			l.ErrorContext(ctx, "Error creating job checker", "error", err)
@@ -70,13 +69,20 @@ func handleRequest(ctx context.Context, req events.S3Event) error {
 
 		l.InfoContext(ctx, "Creating job", "jobName", jobName)
 		err = k8sAPI.CreateJob(ctx, &api.JobInput{
-			Namespace:               cfg.K8S.Namespace,
-			JobName:                 jobName,
-			Image:                   cfg.K8S.Job.Image,
-			Cmd:                     cfg.K8S.Job.Command,
-			Envs:                    cfg.K8S.Job.Envs,
+			Namespace: cfg.K8S.Namespace,
+			JobName:   jobName,
+			Image:     cfg.K8S.Job.Image,
+			Cmd:       cfg.K8S.Job.Command,
+			Envs: map[string]string{
+				"VIDEO_KEY":             record.S3.Object.Key,
+				"VIDEO_BUCKET":          record.S3.Bucket.Name,
+				"PROCEDSSED_BUCKET":     record.S3.Bucket.Name,
+				"AWS_ACCESS_KEY_ID":     cfg.AWS.AccessKey,
+				"AWS_SECRET_ACCESS_KEY": cfg.AWS.SecretAccessKey,
+				"AWS_SESSION_TOKEN":     cfg.AWS.SessionToken,
+				"AWS_REGION":            cfg.AWS.Region,
+			},
 			TtlSecondsAfterFinished: cfg.K8S.Job.TtlSecondsAfterFinished,
-			ImageChecker:            cfg.K8S.Job.ImageChecker,
 		})
 		if err != nil {
 			l.ErrorContext(ctx, "Error creating job", "error", err)
