@@ -46,7 +46,7 @@ jobs:
       - name: Generate Kube Config
         run: |
           aws eks update-kubeconfig --name ${{ env.CLUSTER_NAME }} --region ${{ secrets.AWS_REGION }} --kubeconfig .kube/config
-          chmod 644 .kube/config
+          chmod 777 .kube/config
 
       - name: Login to Amazon ECR
         id: login-ecr
