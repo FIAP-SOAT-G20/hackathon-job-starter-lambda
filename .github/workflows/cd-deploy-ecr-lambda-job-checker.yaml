@@ -17,7 +17,6 @@ env:
   CLUSTER_NAME: hackathon-eks-cluster
   IMAGE_NAME: ${{ github.repository }}-job-checker
 
-
 jobs:
   build-and-push:
     name: CD - Deploy Job Checker to ECR
