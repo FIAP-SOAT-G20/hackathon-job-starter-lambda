@@ -1,11 +1,9 @@
 name: cd/deploy-ecr-lambda-job-checker
 
 on:
-  workflow_dispatch:
-  workflow_run:
-    workflows: [ "ci/unit-tests" ]
-    types: [ completed ]
+  push:
     branches: [ main ]
+  workflow_dispatch:
 
 permissions:
   contents: read
