@@ -116,7 +116,7 @@ func processS3Record(ctx context.Context, infra *infrastructure.Infrastructure, 
 		return fmt.Errorf("error parsing video id: %s", err.Error())
 	}
 
-	// Parse video ID
+	// Parse user ID
 	userId, err := strconv.ParseInt(metadata["user-id"], 10, 64)
 	if err != nil {
 		return fmt.Errorf("error parsing user id: %s", err.Error())
