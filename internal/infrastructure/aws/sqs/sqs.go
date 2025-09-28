@@ -66,7 +66,7 @@ type S3Client interface {
 func NewConsumer(ctx context.Context, queueURL string, cfg *config.Config, jobConfig *config.JobConfig, logger *logger.Logger, k8sAPI *api.K8sAPI, s3Client S3Client) (*Consumer, error) {
 	awsCfg, err := awsconfig.LoadDefaultConfig(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load AWS config: %w", err.Error())
+		return nil, fmt.Errorf("failed to load AWS config: %s", err.Error())
 	}
 
 	client := sqs.NewFromConfig(awsCfg)
@@ -111,7 +111,7 @@ func (c *Consumer) processMessages(ctx context.Context) error {
 
 	result, err := c.client.ReceiveMessage(ctx, input)
 	if err != nil {
-		return fmt.Errorf("failed to receive messages: %w", err.Error())
+		return fmt.Errorf("failed to receive messages: %s", err.Error())
 	}
 
 	if len(result.Messages) == 0 {
@@ -143,7 +143,7 @@ func (c *Consumer) processMessage(ctx context.Context, message types.Message) er
 	// Parse the S3 event from the message body
 	var s3Event S3Event
 	if err := json.Unmarshal([]byte(*message.Body), &s3Event); err != nil {
-		return fmt.Errorf("failed to unmarshal S3 event: %w", err.Error())
+		return fmt.Errorf("failed to unmarshal S3 event: %s", err.Error())
 	}
 
 	c.logger.InfoContext(ctx, "Processing S3 event", "records_count", len(s3Event.Records))
@@ -151,7 +151,7 @@ func (c *Consumer) processMessage(ctx context.Context, message types.Message) er
 	// Process each S3 record
 	for _, record := range s3Event.Records {
 		if err := c.processS3Record(ctx, record); err != nil {
-			return fmt.Errorf("failed to process S3 record: %w", err.Error())
+			return fmt.Errorf("failed to process S3 record: %s", err.Error())
 		}
 	}
 
@@ -165,7 +165,7 @@ func (c *Consumer) processS3Record(ctx context.Context, record S3EventRecord) er
 	// Get object metadata
 	metadata, err := c.s3Client.GetObjectMetadata(ctx, record.S3.Bucket.Name, record.S3.Object.Key)
 	if err != nil {
-		return fmt.Errorf("error getting object metadata: %w", err.Error())
+		return fmt.Errorf("error getting object metadata: %s", err.Error())
 	}
 
 	c.logger.InfoContext(ctx, "Object metadata", "metadata", metadata)
@@ -173,13 +173,13 @@ func (c *Consumer) processS3Record(ctx context.Context, record S3EventRecord) er
 	// Parse video ID
 	videoId, err := strconv.ParseInt(metadata["video-id"], 10, 64)
 	if err != nil {
-		return fmt.Errorf("error parsing video id: %w", err.Error())
+		return fmt.Errorf("error parsing video id: %s", err.Error())
 	}
 
 	// Parse video ID
 	userId, err := strconv.ParseInt(metadata["user-id"], 10, 64)
 	if err != nil {
-		return fmt.Errorf("error parsing user id: %w", err.Error())
+		return fmt.Errorf("error parsing user id: %s", err.Error())
 	}
 
 	// Generate job names
@@ -206,7 +206,7 @@ func (c *Consumer) processS3Record(ctx context.Context, record S3EventRecord) er
 		TtlSecondsAfterFinished: c.cfg.K8S.Job.TtlSecondsAfterFinished,
 	})
 	if err != nil {
-		return fmt.Errorf("error creating job checker: %w", err.Error())
+		return fmt.Errorf("error creating job checker: %s", err.Error())
 	}
 
 	// Create main job
@@ -228,7 +228,7 @@ func (c *Consumer) processS3Record(ctx context.Context, record S3EventRecord) er
 		TtlSecondsAfterFinished: c.cfg.K8S.Job.TtlSecondsAfterFinished,
 	})
 	if err != nil {
-		return fmt.Errorf("error creating job: %w", err.Error())
+		return fmt.Errorf("error creating job: %s", err.Error())
 	}
 
 	return nil
@@ -243,7 +243,7 @@ func (c *Consumer) deleteMessage(ctx context.Context, receiptHandle string) erro
 
 	_, err := c.client.DeleteMessage(ctx, input)
 	if err != nil {
-		return fmt.Errorf("failed to delete message: %w", err.Error())
+		return fmt.Errorf("failed to delete message: %s", err.Error())
 	}
 
 	return nil
