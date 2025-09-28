@@ -80,18 +80,18 @@ func main() {
 
 			var s3Event S3Event
 			if err := json.Unmarshal([]byte(*message.Body), &s3Event); err != nil {
-				return false, fmt.Errorf("failed to unmarshal S3 event: %s", err.Error())
+				return true, fmt.Errorf("failed to unmarshal S3 event: %s", err.Error())
 			}
 
 			for _, record := range s3Event.Records {
 				err := processS3Record(ctx, infra, record)
 				if err != nil {
 					infra.Logger.Error("Failed to process message", "error", err.Error(), "messageID", *message.MessageId)
-					return false, err
+					return true, err
 				}
 			}
 
-			return true, nil
+			return false, nil
 		})
 		if err != nil {
 			infra.Logger.Error("Failed to receive messages", "error", err.Error())

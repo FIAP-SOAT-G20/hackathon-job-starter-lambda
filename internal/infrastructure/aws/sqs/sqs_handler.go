@@ -48,7 +48,12 @@ func (h *SqsHandler) ReceiveMessages(ctx context.Context, processor func(types.M
 			}
 
 			h.logger.Info("Sending message to dead-letter queue", "messageId", *message.MessageId)
-			// TODO: send the message to a dead-letter queue for further investigation
+
+			if err != nil {
+				// se deu altum tipo de erro, irá para a próxima mensagem
+				// e irá cair na retententativa da fila e eventualmente na DLQ
+				continue
+			}
 		}
 
 		if err := h.DeleteMessage(ctx, h.queueURL, *message.ReceiptHandle); err != nil {
