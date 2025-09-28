@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
-	"github.com/aws/aws-sdk-go-v2/service/sns/types"
 )
 
 type SNS struct {
@@ -24,19 +23,8 @@ func NewSNS(cfg *myConfig.Config) *SNS {
 	}
 }
 
-func (s *SNS) Publish(ctx context.Context, message string, groupId string, dedupId string, filterKey string, filterValue string) error {
+func (s *SNS) Publish(ctx context.Context, message string) error {
 	publishInput := sns.PublishInput{TopicArn: aws.String(s.TopicArn), Message: aws.String(message)}
-	if groupId != "" {
-		publishInput.MessageGroupId = aws.String(groupId)
-	}
-	if dedupId != "" {
-		publishInput.MessageDeduplicationId = aws.String(dedupId)
-	}
-	if filterKey != "" && filterValue != "" {
-		publishInput.MessageAttributes = map[string]types.MessageAttributeValue{
-			filterKey: {DataType: aws.String("String"), StringValue: aws.String(filterValue)},
-		}
-	}
 	_, err := s.Client.Publish(ctx, &publishInput)
 	if err != nil {
 		log.Printf("Couldn't publish message to topic %v. Here's why: %v", s.TopicArn, err)

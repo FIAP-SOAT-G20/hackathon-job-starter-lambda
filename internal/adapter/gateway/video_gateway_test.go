@@ -28,13 +28,8 @@ func TestVideoGateway_UpdateVideoStatus(t *testing.T) {
 			Status:  dto.VideoStatusProcessing,
 		}
 
-		expectedGroupId := "video-id-123"
-		expectedDedupId := "video-status-processing"
-		expectedFilterKey := "status"
-		expectedFilterValue := "processing"
-
 		mockSNS.EXPECT().
-			Publish(ctx, gomock.Any(), expectedGroupId, expectedDedupId, expectedFilterKey, expectedFilterValue).
+			Publish(ctx, gomock.Any()).
 			Return(nil).
 			Times(1)
 
@@ -56,7 +51,7 @@ func TestVideoGateway_UpdateVideoStatus(t *testing.T) {
 		expectedError := errors.New("SNS publish failed")
 
 		mockSNS.EXPECT().
-			Publish(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Publish(ctx, gomock.Any()).
 			Return(expectedError).
 			Times(1)
 
@@ -91,13 +86,8 @@ func TestVideoGateway_UpdateVideoStatus(t *testing.T) {
 					Status:  tc.status,
 				}
 
-				expectedGroupId := "video-id-123"
-				expectedDedupId := "video-status-" + tc.expectedStatus
-				expectedFilterKey := "status"
-				expectedFilterValue := tc.expectedStatus
-
 				mockSNS.EXPECT().
-					Publish(ctx, gomock.Any(), expectedGroupId, expectedDedupId, expectedFilterKey, expectedFilterValue).
+					Publish(ctx, gomock.Any()).
 					Return(nil).
 					Times(1)
 
@@ -119,13 +109,8 @@ func TestVideoGateway_UpdateVideoStatus(t *testing.T) {
 			Status:  "",
 		}
 
-		expectedGroupId := "video-id-0"
-		expectedDedupId := "video-status-"
-		expectedFilterKey := "status"
-		expectedFilterValue := ""
-
 		mockSNS.EXPECT().
-			Publish(ctx, gomock.Any(), expectedGroupId, expectedDedupId, expectedFilterKey, expectedFilterValue).
+			Publish(ctx, gomock.Any()).
 			Return(nil).
 			Times(1)
 
@@ -148,8 +133,8 @@ func TestVideoGateway_UpdateVideoStatus(t *testing.T) {
 		// Capture the JSON payload passed to SNS
 		var capturedMessage string
 		mockSNS.EXPECT().
-			Publish(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-			Do(func(ctx context.Context, message string, groupId string, dedupId string, filterKey string, filterValue string) {
+			Publish(ctx, gomock.Any()).
+			Do(func(ctx context.Context, message string) {
 				capturedMessage = message
 			}).
 			Return(nil).
