@@ -228,10 +228,13 @@ func (c *Consumer) processMessage(ctx context.Context, message types.Message) er
 	close(errorChan)
 
 	// Check for any errors
+	var errs []error
 	for err := range errorChan {
-		return err
+		errs = append(errs, err)
 	}
-
+	if len(errs) > 0 {
+		return fmt.Errorf("errors occurred during S3 record processing: %v", errs)
+	}
 	return nil
 }
 
