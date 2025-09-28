@@ -3,7 +3,6 @@ package gateway
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/FIAP-SOAT-G20/hackathon-job-starter-lambda/internal/core/dto"
@@ -30,10 +29,6 @@ func (g *VideoGateway) UpdateVideoStatus(ctx context.Context, input dto.UpdateVi
 	if err != nil {
 		return err
 	}
-	groupId := fmt.Sprintf("video-id-%d", input.VideoId)
-	dedupId := fmt.Sprintf("video-status-%s", string(input.Status))
-	filterKey := "status"
-	filterValue := string(input.Status)
 
-	return g.sns.Publish(ctx, string(json), groupId, dedupId, filterKey, filterValue)
+	return g.sns.Publish(ctx, string(json))
 }
