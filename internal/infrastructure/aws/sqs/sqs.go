@@ -201,6 +201,8 @@ func (c *Consumer) processS3Record(ctx context.Context, record S3EventRecord) er
 			"AWS_SECRET_ACCESS_KEY":              c.cfg.AWS.SecretAccessKey,
 			"AWS_SESSION_TOKEN":                  c.cfg.AWS.SessionToken,
 			"AWS_REGION":                         c.cfg.AWS.Region,
+			"AWS_SNS_TOPIC_ARN":                  c.cfg.AWS.SNS.TopicArn,
+			"AWS_SQS_QUEUE_URL":                  c.cfg.AWS.SQS.QueueURL,
 			"K8S_NAMESPACE":                      c.cfg.K8S.Namespace,
 			"K8S_JOB_NAME":                       jobName,
 			"K8S_JOB_IMAGE":                      c.cfg.K8S.Job.Image,
