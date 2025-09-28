@@ -122,7 +122,7 @@ func (c *Consumer) processMessages(ctx context.Context) error {
 
 	// Create channels for worker pool
 	messageChan := make(chan types.Message, len(result.Messages))
-	successChan := make(chan string, len(result.Messages)) // receipt handles for successful messages
+	successChan := make(chan string, c.workerPoolSize) // receipt handles for successful messages
 
 	// Start worker pool
 	var wg sync.WaitGroup
@@ -228,12 +228,13 @@ func (c *Consumer) processMessage(ctx context.Context, message types.Message) er
 	close(errorChan)
 
 	// Check for any errors
+	var errs []error
 	for err := range errorChan {
-		if err != nil {
-			return err
-		}
+		errs = append(errs, err)
 	}
-
+	if len(errs) > 0 {
+		return fmt.Errorf("errors occurred during S3 record processing: %v", errs)
+	}
 	return nil
 }
 
