@@ -5,11 +5,11 @@ import "time"
 type VideoProcessingStatus string
 
 const (
-	VideoStatusUploaded     VideoProcessingStatus = "uploaded"
-	VideoStatusProcessing   VideoProcessingStatus = "processing"
-	VideoStatusReprocessing VideoProcessingStatus = "reprocessing"
-	VideoStatusFinished     VideoProcessingStatus = "finished"
-	VideoStatusFailed       VideoProcessingStatus = "failed"
+	VideoStatusUploaded     VideoProcessingStatus = "UPLOADED"
+	VideoStatusProcessing   VideoProcessingStatus = "PROCESSING"
+	VideoStatusReprocessing VideoProcessingStatus = "REPROCESSING"
+	VideoStatusFinished     VideoProcessingStatus = "FINISHED"
+	VideoStatusFailed       VideoProcessingStatus = "FAILED"
 )
 
 type UpdateVideoStatusInput struct {
