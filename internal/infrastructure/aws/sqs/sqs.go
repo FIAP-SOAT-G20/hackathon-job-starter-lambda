@@ -142,8 +142,8 @@ func (c *Consumer) processMessages(ctx context.Context) error {
 	close(messageChan)
 
 	// Wait for all workers to complete
-	wg.Wait()
 	workerWG.Wait()
+	wg.Wait()
 	close(successChan)
 
 	// Collect successful receipt handles
