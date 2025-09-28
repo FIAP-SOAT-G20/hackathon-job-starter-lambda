@@ -349,19 +349,19 @@ func (c *Consumer) processS3Record(ctx context.Context, record S3EventRecord) er
 }
 
 // deleteMessage deletes a processed message from the queue
-func (c *Consumer) deleteMessage(ctx context.Context, receiptHandle string) error {
-	input := &sqs.DeleteMessageInput{
-		QueueUrl:      aws.String(c.queueURL),
-		ReceiptHandle: aws.String(receiptHandle),
-	}
+// func (c *Consumer) deleteMessage(ctx context.Context, receiptHandle string) error {
+// 	input := &sqs.DeleteMessageInput{
+// 		QueueUrl:      aws.String(c.queueURL),
+// 		ReceiptHandle: aws.String(receiptHandle),
+// 	}
 
-	_, err := c.client.DeleteMessage(ctx, input)
-	if err != nil {
-		return fmt.Errorf("failed to delete message: %s", err.Error())
-	}
+// 	_, err := c.client.DeleteMessage(ctx, input)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to delete message: %s", err.Error())
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // deleteMessagesBatch deletes multiple messages from the queue in batch
 func (c *Consumer) deleteMessagesBatch(ctx context.Context, receiptHandles []string) error {
