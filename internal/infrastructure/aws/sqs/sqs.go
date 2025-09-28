@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/FIAP-SOAT-G20/hackathon-job-starter-lambda/internal/infrastructure/api"
@@ -48,13 +49,15 @@ type SQSMessage struct {
 
 // Consumer handles SQS message consumption
 type Consumer struct {
-	client    *sqs.Client
-	queueURL  string
-	cfg       *config.Config
-	jobConfig *config.JobConfig
-	logger    *logger.Logger
-	k8sAPI    *api.K8sAPI
-	s3Client  S3Client
+	client           *sqs.Client
+	queueURL         string
+	cfg              *config.Config
+	jobConfig        *config.JobConfig
+	logger           *logger.Logger
+	k8sAPI           *api.K8sAPI
+	s3Client         S3Client
+	workerPoolSize   int
+	maxMessagesBatch int
 }
 
 // S3Client interface for S3 operations
@@ -67,13 +70,15 @@ func NewConsumer(ctx context.Context, queueURL string, cfg *config.Config, jobCo
 	client := sqs.NewFromConfig(aws.Config{Region: cfg.AWS.Region, Credentials: credentials.NewStaticCredentialsProvider(cfg.AWS.AccessKey, cfg.AWS.SecretAccessKey, cfg.AWS.SessionToken)})
 
 	return &Consumer{
-		client:    client,
-		queueURL:  queueURL,
-		cfg:       cfg,
-		jobConfig: jobConfig,
-		logger:    logger,
-		k8sAPI:    k8sAPI,
-		s3Client:  s3Client,
+		client:           client,
+		queueURL:         queueURL,
+		cfg:              cfg,
+		jobConfig:        jobConfig,
+		logger:           logger,
+		k8sAPI:           k8sAPI,
+		s3Client:         s3Client,
+		workerPoolSize:   cfg.AWS.SQS.WorkerPoolSize,
+		maxMessagesBatch: cfg.AWS.SQS.MaxMessagesBatch,
 	}, nil
 }
 
@@ -100,8 +105,8 @@ func (c *Consumer) Start(ctx context.Context) error {
 func (c *Consumer) processMessages(ctx context.Context) error {
 	input := &sqs.ReceiveMessageInput{
 		QueueUrl:            aws.String(c.queueURL),
-		MaxNumberOfMessages: 10,
-		WaitTimeSeconds:     20, // Long polling
+		MaxNumberOfMessages: int32(c.maxMessagesBatch),
+		WaitTimeSeconds:     int32(c.cfg.AWS.SQS.WaitTimeSeconds), // Long polling
 	}
 
 	result, err := c.client.ReceiveMessage(ctx, input)
@@ -113,22 +118,127 @@ func (c *Consumer) processMessages(ctx context.Context) error {
 		return nil // No messages to process
 	}
 
-	c.logger.InfoContext(ctx, "Processing messages", "count", len(result.Messages))
+	c.logger.InfoContext(ctx, "Processing messages in parallel", "count", len(result.Messages), "workers", c.workerPoolSize)
 
+	// Create channels for worker pool
+	messageChan := make(chan types.Message, len(result.Messages))
+	errorChan := make(chan error)
+	successChan := make(chan string) // receipt handles for successful messages
+
+	// Start worker pool
+	var wg sync.WaitGroup
+	for i := 0; i < c.workerPoolSize; i++ {
+		wg.Add(1)
+		go func(workerID int) {
+			defer wg.Done()
+			c.worker(ctx, workerID, messageChan, errorChan, successChan)
+		}(i)
+	}
+
+	// Send messages to workers
 	for _, message := range result.Messages {
-		if err := c.processMessage(ctx, message); err != nil {
-			c.logger.ErrorContext(ctx, "Error processing message", "message_id", *message.MessageId, "error", err.Error())
-			// Don't delete the message if processing failed
-			continue
-		}
+		messageChan <- message
+	}
+	close(messageChan)
 
-		// Delete the message after successful processing
-		if err := c.deleteMessage(ctx, *message.ReceiptHandle); err != nil {
-			c.logger.ErrorContext(ctx, "Error deleting message", "message_id", *message.MessageId, "error", err.Error())
+	// Wait for all workers to complete
+	wg.Wait()
+	close(errorChan)
+	close(successChan)
+
+	// Collect results
+	var successfulReceiptHandles []string
+	var errors []error
+
+	// Collect successful receipt handles
+	for receiptHandle := range successChan {
+		successfulReceiptHandles = append(successfulReceiptHandles, receiptHandle)
+	}
+
+	// Collect errors
+	for err := range errorChan {
+		errors = append(errors, err)
+	}
+
+	// Log results
+	c.logger.InfoContext(ctx, "Message processing completed",
+		"successful", len(successfulReceiptHandles),
+		"failed", len(errors))
+
+	// Delete successful messages in batch
+	if len(successfulReceiptHandles) > 0 {
+		if err := c.deleteMessagesBatch(ctx, successfulReceiptHandles); err != nil {
+			c.logger.ErrorContext(ctx, "Error deleting messages in batch", "error", err.Error())
 		}
 	}
 
+	// Log errors
+	for _, err := range errors {
+		c.logger.ErrorContext(ctx, "Message processing error", "error", err.Error())
+	}
+
 	return nil
+}
+
+// worker processes messages from the message channel
+func (c *Consumer) worker(ctx context.Context, workerID int, messageChan <-chan types.Message, errorChan chan<- error, successChan chan<- string) {
+	for message := range messageChan {
+		c.logger.DebugContext(ctx, "Worker processing message", "worker_id", workerID, "message_id", *message.MessageId)
+
+		// Try to process the message with retry logic
+		if err := c.processMessageWithRetry(ctx, message, 3); err != nil {
+			c.logger.ErrorContext(ctx, "Worker error processing message after retries",
+				"worker_id", workerID,
+				"message_id", *message.MessageId,
+				"error", err.Error())
+			errorChan <- err
+		} else {
+			// Send receipt handle for successful processing
+			successChan <- *message.ReceiptHandle
+		}
+	}
+}
+
+// processMessageWithRetry processes a message with retry logic
+func (c *Consumer) processMessageWithRetry(ctx context.Context, message types.Message, maxRetries int) error {
+	var lastErr error
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		if attempt > 1 {
+			c.logger.InfoContext(ctx, "Retrying message processing",
+				"message_id", *message.MessageId,
+				"attempt", attempt,
+				"max_retries", maxRetries)
+
+			// Exponential backoff: wait 2^attempt seconds
+			backoffDuration := time.Duration(1<<uint(attempt-1)) * time.Second
+			select {
+			case <-time.After(backoffDuration):
+				// continue after backoff
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		}
+
+		if err := c.processMessage(ctx, message); err != nil {
+			lastErr = err
+			c.logger.WarnContext(ctx, "Message processing attempt failed",
+				"message_id", *message.MessageId,
+				"attempt", attempt,
+				"error", err.Error())
+			continue
+		}
+
+		// Success
+		if attempt > 1 {
+			c.logger.InfoContext(ctx, "Message processing succeeded after retry",
+				"message_id", *message.MessageId,
+				"attempt", attempt)
+		}
+		return nil
+	}
+
+	return fmt.Errorf("message processing failed after %d attempts: %s", maxRetries, lastErr.Error())
 }
 
 // processMessage processes a single SQS message
@@ -244,15 +354,76 @@ func (c *Consumer) processS3Record(ctx context.Context, record S3EventRecord) er
 }
 
 // deleteMessage deletes a processed message from the queue
-func (c *Consumer) deleteMessage(ctx context.Context, receiptHandle string) error {
-	input := &sqs.DeleteMessageInput{
-		QueueUrl:      aws.String(c.queueURL),
-		ReceiptHandle: aws.String(receiptHandle),
+// func (c *Consumer) deleteMessage(ctx context.Context, receiptHandle string) error {
+// 	input := &sqs.DeleteMessageInput{
+// 		QueueUrl:      aws.String(c.queueURL),
+// 		ReceiptHandle: aws.String(receiptHandle),
+// 	}
+
+// 	_, err := c.client.DeleteMessage(ctx, input)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to delete message: %s", err.Error())
+// 	}
+
+// 	return nil
+// }
+
+// deleteMessagesBatch deletes multiple messages from the queue in batch
+func (c *Consumer) deleteMessagesBatch(ctx context.Context, receiptHandles []string) error {
+	if len(receiptHandles) == 0 {
+		return nil
 	}
 
-	_, err := c.client.DeleteMessage(ctx, input)
+	// SQS batch delete can handle up to 10 messages at a time
+	const maxBatchSize = 10
+
+	for i := 0; i < len(receiptHandles); i += maxBatchSize {
+		end := i + maxBatchSize
+		if end > len(receiptHandles) {
+			end = len(receiptHandles)
+		}
+
+		batch := receiptHandles[i:end]
+		if err := c.deleteBatch(ctx, batch); err != nil {
+			return fmt.Errorf("failed to delete batch %d-%d: %s", i, end-1, err.Error())
+		}
+	}
+
+	return nil
+}
+
+// deleteBatch deletes a batch of messages (up to 10)
+func (c *Consumer) deleteBatch(ctx context.Context, receiptHandles []string) error {
+	if len(receiptHandles) == 0 {
+		return nil
+	}
+
+	entries := make([]types.DeleteMessageBatchRequestEntry, len(receiptHandles))
+	for i, receiptHandle := range receiptHandles {
+		entries[i] = types.DeleteMessageBatchRequestEntry{
+			Id:            aws.String(fmt.Sprintf("msg-%d", i)),
+			ReceiptHandle: aws.String(receiptHandle),
+		}
+	}
+
+	input := &sqs.DeleteMessageBatchInput{
+		QueueUrl: aws.String(c.queueURL),
+		Entries:  entries,
+	}
+
+	result, err := c.client.DeleteMessageBatch(ctx, input)
 	if err != nil {
-		return fmt.Errorf("failed to delete message: %s", err.Error())
+		return fmt.Errorf("failed to delete message batch: %s", err.Error())
+	}
+
+	// Log any failed deletions
+	if len(result.Failed) > 0 {
+		for _, failed := range result.Failed {
+			c.logger.ErrorContext(ctx, "Failed to delete message in batch",
+				"id", *failed.Id,
+				"code", *failed.Code,
+				"message", *failed.Message)
+		}
 	}
 
 	return nil

@@ -42,7 +42,10 @@ type Config struct {
 			TopicArn string
 		}
 		SQS struct {
-			QueueURL string
+			QueueURL         string
+			WorkerPoolSize   int
+			MaxMessagesBatch int
+			WaitTimeSeconds  int
 		}
 	}
 }
@@ -87,6 +90,12 @@ func LoadLambdaConfig() *Config {
 	awsSnsTopicArn := getEnv("AWS_SNS_TOPIC_ARN", "")
 	awsSqsQueueURL := getEnv("AWS_SQS_QUEUE_URL", "")
 	awsSessionToken := getEnv("AWS_SESSION_TOKEN", "")
+
+	// SQS Consumer settings
+	sqsWorkerPoolSize := getIntEnv("SQS_WORKER_POOL_SIZE", 5)
+
+	sqsMaxMessagesBatch := getIntEnv("SQS_MAX_MESSAGES_BATCH", 10)
+	sqsWaitTimeSeconds := getIntEnv("SQS_WAIT_TIME_SECONDS", 20)
 	config := &Config{}
 
 	config.Environment = environment
@@ -104,6 +113,9 @@ func LoadLambdaConfig() *Config {
 	config.AWS.SecretAccessKey = awsSecretAccessKey
 	config.AWS.SNS.TopicArn = awsSnsTopicArn
 	config.AWS.SQS.QueueURL = awsSqsQueueURL
+	config.AWS.SQS.WorkerPoolSize = sqsWorkerPoolSize
+	config.AWS.SQS.MaxMessagesBatch = sqsMaxMessagesBatch
+	config.AWS.SQS.WaitTimeSeconds = sqsWaitTimeSeconds
 	config.AWS.SessionToken = awsSessionToken
 	return config
 }
@@ -146,4 +158,13 @@ func getEnvsWithPrefix(prefix string) map[string]string {
 		}
 	}
 	return envs
+}
+
+func getIntEnv(key string, defaultValue int) int {
+	value, err := strconv.Atoi(getEnv(key, strconv.Itoa(defaultValue)))
+	if err != nil || value < 0 {
+		log.Printf("Warning: %s is not a valid integer: %v. Setting to %d", key, err, defaultValue)
+		return defaultValue
+	}
+	return value
 }
