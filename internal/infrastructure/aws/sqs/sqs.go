@@ -219,7 +219,7 @@ func (c *Consumer) processS3Record(ctx context.Context, record S3EventRecord) er
 		Envs: map[string]string{
 			"VIDEO_KEY":             record.S3.Object.Key,
 			"VIDEO_BUCKET":          record.S3.Bucket.Name,
-			"PROCEDSSED_BUCKET":     record.S3.Bucket.Name,
+			"PROCESSED_BUCKET":      record.S3.Bucket.Name,
 			"AWS_ACCESS_KEY_ID":     c.cfg.AWS.AccessKey,
 			"AWS_SECRET_ACCESS_KEY": c.cfg.AWS.SecretAccessKey,
 			"AWS_SESSION_TOKEN":     c.cfg.AWS.SessionToken,
