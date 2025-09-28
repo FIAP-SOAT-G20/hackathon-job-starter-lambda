@@ -229,9 +229,7 @@ func (c *Consumer) processMessage(ctx context.Context, message types.Message) er
 
 	// Check for any errors
 	for err := range errorChan {
-		if err != nil {
-			return err
-		}
+		return err
 	}
 
 	return nil
