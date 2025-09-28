@@ -92,21 +92,10 @@ func LoadLambdaConfig() *Config {
 	awsSessionToken := getEnv("AWS_SESSION_TOKEN", "")
 
 	// SQS Consumer settings
-	sqsWorkerPoolSize, err := strconv.Atoi(getEnv("SQS_WORKER_POOL_SIZE", "5"))
-	if err != nil {
-		log.Printf("Warning: SQS_WORKER_POOL_SIZE is not a valid integer: %v. Setting to 5", err)
-		sqsWorkerPoolSize = 5
-	}
-	sqsMaxMessagesBatch, err := strconv.Atoi(getEnv("SQS_MAX_MESSAGES_BATCH", "10"))
-	if err != nil {
-		log.Printf("Warning: SQS_MAX_MESSAGES_BATCH is not a valid integer: %v. Setting to 10", err)
-		sqsMaxMessagesBatch = 10
-	}
-	sqsWaitTimeSeconds, err := strconv.Atoi(getEnv("SQS_WAIT_TIME_SECONDS", "20"))
-	if err != nil {
-		log.Printf("Warning: SQS_WAIT_TIME_SECONDS is not a valid integer: %v. Setting to 20", err)
-		sqsWaitTimeSeconds = 20
-	}
+	sqsWorkerPoolSize := getIntEnv("SQS_WORKER_POOL_SIZE", 5)
+
+	sqsMaxMessagesBatch := getIntEnv("SQS_MAX_MESSAGES_BATCH", 10)
+	sqsWaitTimeSeconds := getIntEnv("SQS_WAIT_TIME_SECONDS", 20)
 	config := &Config{}
 
 	config.Environment = environment
@@ -169,4 +158,13 @@ func getEnvsWithPrefix(prefix string) map[string]string {
 		}
 	}
 	return envs
+}
+
+func getIntEnv(key string, defaultValue int) int {
+	value, err := strconv.Atoi(getEnv(key, strconv.Itoa(defaultValue)))
+	if err != nil || value < 0 {
+		log.Printf("Warning: %s is not a valid integer: %v. Setting to %d", key, err, defaultValue)
+		return defaultValue
+	}
+	return value
 }
