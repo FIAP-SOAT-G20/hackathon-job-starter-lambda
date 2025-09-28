@@ -6,7 +6,6 @@ import (
 
 	myConfig "github.com/FIAP-SOAT-G20/hackathon-job-starter-lambda/internal/infrastructure/config"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sns/types"
@@ -18,15 +17,7 @@ type SNS struct {
 }
 
 func NewSNS(cfg *myConfig.Config) *SNS {
-
-	ctx := context.Background()
-	sdkConfig, err := config.LoadDefaultConfig(ctx, config.WithRegion(cfg.AWS.Region),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(cfg.AWS.AccessKey, cfg.AWS.SecretAccessKey, cfg.AWS.SessionToken)))
-	if err != nil {
-		log.Fatalf("Couldn't load default configuration. Have you set up your AWS account? %v", err)
-	}
-	snsClient := sns.NewFromConfig(sdkConfig)
-
+	snsClient := sns.NewFromConfig(aws.Config{Region: cfg.AWS.Region, Credentials: credentials.NewStaticCredentialsProvider(cfg.AWS.AccessKey, cfg.AWS.SecretAccessKey, cfg.AWS.SessionToken)})
 	return &SNS{
 		Client:   snsClient,
 		TopicArn: cfg.AWS.SNS.TopicArn,
