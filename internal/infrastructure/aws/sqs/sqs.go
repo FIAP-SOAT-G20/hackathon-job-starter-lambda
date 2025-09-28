@@ -122,8 +122,7 @@ func (c *Consumer) processMessages(ctx context.Context) error {
 
 	// Create channels for worker pool
 	messageChan := make(chan types.Message, len(result.Messages))
-	errorChan := make(chan error)
-	successChan := make(chan string) // receipt handles for successful messages
+	successChan := make(chan string, len(result.Messages)) // receipt handles for successful messages
 
 	// Start worker pool
 	var wg sync.WaitGroup
@@ -131,7 +130,7 @@ func (c *Consumer) processMessages(ctx context.Context) error {
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
-			c.worker(ctx, workerID, messageChan, errorChan, successChan)
+			c.worker(ctx, workerID, messageChan, successChan, &wg)
 		}(i)
 	}
 
@@ -143,27 +142,18 @@ func (c *Consumer) processMessages(ctx context.Context) error {
 
 	// Wait for all workers to complete
 	wg.Wait()
-	close(errorChan)
 	close(successChan)
 
-	// Collect results
-	var successfulReceiptHandles []string
-	var errors []error
-
 	// Collect successful receipt handles
+	var successfulReceiptHandles []string
 	for receiptHandle := range successChan {
 		successfulReceiptHandles = append(successfulReceiptHandles, receiptHandle)
-	}
-
-	// Collect errors
-	for err := range errorChan {
-		errors = append(errors, err)
 	}
 
 	// Log results
 	c.logger.InfoContext(ctx, "Message processing completed",
 		"successful", len(successfulReceiptHandles),
-		"failed", len(errors))
+		"failed", len(result.Messages)-len(successfulReceiptHandles))
 
 	// Delete successful messages in batch
 	if len(successfulReceiptHandles) > 0 {
@@ -172,73 +162,37 @@ func (c *Consumer) processMessages(ctx context.Context) error {
 		}
 	}
 
-	// Log errors
-	for _, err := range errors {
-		c.logger.ErrorContext(ctx, "Message processing error", "error", err.Error())
-	}
-
 	return nil
 }
 
 // worker processes messages from the message channel
-func (c *Consumer) worker(ctx context.Context, workerID int, messageChan <-chan types.Message, errorChan chan<- error, successChan chan<- string) {
-	for message := range messageChan {
+func (c *Consumer) worker(ctx context.Context, workerID int, messageChan <-chan types.Message, successChan chan<- string, wg *sync.WaitGroup) {
+	for {
+		message, ok := <-messageChan
+		if !ok {
+			c.logger.WarnContext(ctx, "Worker channel closed", "worker_id", workerID)
+			break
+		}
+
 		c.logger.DebugContext(ctx, "Worker processing message", "worker_id", workerID, "message_id", *message.MessageId)
 
-		// Try to process the message with retry logic
-		if err := c.processMessageWithRetry(ctx, message, 3); err != nil {
-			c.logger.ErrorContext(ctx, "Worker error processing message after retries",
-				"worker_id", workerID,
-				"message_id", *message.MessageId,
-				"error", err.Error())
-			errorChan <- err
-		} else {
-			// Send receipt handle for successful processing
-			successChan <- *message.ReceiptHandle
-		}
-	}
-}
-
-// processMessageWithRetry processes a message with retry logic
-func (c *Consumer) processMessageWithRetry(ctx context.Context, message types.Message, maxRetries int) error {
-	var lastErr error
-
-	for attempt := 1; attempt <= maxRetries; attempt++ {
-		if attempt > 1 {
-			c.logger.InfoContext(ctx, "Retrying message processing",
-				"message_id", *message.MessageId,
-				"attempt", attempt,
-				"max_retries", maxRetries)
-
-			// Exponential backoff: wait 2^attempt seconds
-			backoffDuration := time.Duration(1<<uint(attempt-1)) * time.Second
-			select {
-			case <-time.After(backoffDuration):
-				// continue after backoff
-			case <-ctx.Done():
-				return ctx.Err()
+		// Process the message concurrently using a goroutine
+		wg.Add(1)
+		go func(msg types.Message) {
+			defer wg.Done()
+			// Process the message without retry (DLQ handles failures)
+			if err := c.processMessage(ctx, msg); err != nil {
+				c.logger.ErrorContext(ctx, "Worker error processing message",
+					"worker_id", workerID,
+					"message_id", *msg.MessageId,
+					"error", err.Error())
+				// Don't send to success channel - message will go to DLQ
+			} else {
+				// Send receipt handle for successful processing
+				successChan <- *msg.ReceiptHandle
 			}
-		}
-
-		if err := c.processMessage(ctx, message); err != nil {
-			lastErr = err
-			c.logger.WarnContext(ctx, "Message processing attempt failed",
-				"message_id", *message.MessageId,
-				"attempt", attempt,
-				"error", err.Error())
-			continue
-		}
-
-		// Success
-		if attempt > 1 {
-			c.logger.InfoContext(ctx, "Message processing succeeded after retry",
-				"message_id", *message.MessageId,
-				"attempt", attempt)
-		}
-		return nil
+		}(message)
 	}
-
-	return fmt.Errorf("message processing failed after %d attempts: %s", maxRetries, lastErr.Error())
 }
 
 // processMessage processes a single SQS message
@@ -253,10 +207,28 @@ func (c *Consumer) processMessage(ctx context.Context, message types.Message) er
 
 	c.logger.InfoContext(ctx, "Processing S3 event", "records_count", len(s3Event.Records))
 
-	// Process each S3 record
+	// Process each S3 record concurrently
+	var wg sync.WaitGroup
+	errorChan := make(chan error, len(s3Event.Records))
+
 	for _, record := range s3Event.Records {
-		if err := c.processS3Record(ctx, record); err != nil {
-			return fmt.Errorf("failed to process S3 record: %s", err.Error())
+		wg.Add(1)
+		go func(r S3EventRecord) {
+			defer wg.Done()
+			if err := c.processS3Record(ctx, r); err != nil {
+				errorChan <- fmt.Errorf("failed to process S3 record: %s", err.Error())
+			}
+		}(record)
+	}
+
+	// Wait for all records to be processed
+	wg.Wait()
+	close(errorChan)
+
+	// Check for any errors
+	for err := range errorChan {
+		if err != nil {
+			return err
 		}
 	}
 
@@ -338,7 +310,7 @@ func (c *Consumer) processS3Record(ctx context.Context, record S3EventRecord) er
 		Envs: map[string]string{
 			"VIDEO_KEY":             record.S3.Object.Key,
 			"VIDEO_BUCKET":          record.S3.Bucket.Name,
-			"PROCEDSSED_BUCKET":     record.S3.Bucket.Name,
+			"PROCESSED_BUCKET":      record.S3.Bucket.Name,
 			"AWS_ACCESS_KEY_ID":     c.cfg.AWS.AccessKey,
 			"AWS_SECRET_ACCESS_KEY": c.cfg.AWS.SecretAccessKey,
 			"AWS_SESSION_TOKEN":     c.cfg.AWS.SessionToken,

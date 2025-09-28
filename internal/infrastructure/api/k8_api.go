@@ -149,5 +149,22 @@ func (k *K8sAPI) GetLastJobStatus(ctx context.Context, jobName, namespace string
 	if err != nil {
 		return "", err
 	}
+
+	// Check if job has any conditions
+	if len(job.Status.Conditions) == 0 {
+		// If no conditions are set yet, check the job status directly
+		if job.Status.Active > 0 {
+			return "Running", nil
+		}
+		if job.Status.Succeeded > 0 {
+			return "Complete", nil
+		}
+		if job.Status.Failed > 0 {
+			return "Failed", nil
+		}
+		// Job is still pending
+		return "Pending", nil
+	}
+
 	return string(job.Status.Conditions[len(job.Status.Conditions)-1].Type), nil
 }
