@@ -126,11 +126,12 @@ func (c *Consumer) processMessages(ctx context.Context) error {
 
 	// Start worker pool
 	var wg sync.WaitGroup
+	workerWG := sync.WaitGroup{}
 	for i := 0; i < c.workerPoolSize; i++ {
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
-			c.worker(ctx, workerID, messageChan, successChan, &wg)
+			c.worker(ctx, workerID, messageChan, successChan, &workerWG)
 		}(i)
 	}
 
@@ -142,6 +143,7 @@ func (c *Consumer) processMessages(ctx context.Context) error {
 
 	// Wait for all workers to complete
 	wg.Wait()
+	workerWG.Wait()
 	close(successChan)
 
 	// Collect successful receipt handles
