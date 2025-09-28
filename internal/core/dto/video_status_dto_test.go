@@ -9,19 +9,19 @@ import (
 
 func TestVideoProcessingStatus(t *testing.T) {
 	t.Run("should have correct status constants", func(t *testing.T) {
-		assert.Equal(t, VideoProcessingStatus("uploaded"), VideoStatusUploaded)
-		assert.Equal(t, VideoProcessingStatus("processing"), VideoStatusProcessing)
-		assert.Equal(t, VideoProcessingStatus("reprocessing"), VideoStatusReprocessing)
-		assert.Equal(t, VideoProcessingStatus("finished"), VideoStatusFinished)
-		assert.Equal(t, VideoProcessingStatus("failed"), VideoStatusFailed)
+		assert.Equal(t, VideoProcessingStatus("UPLOADED"), VideoStatusUploaded)
+		assert.Equal(t, VideoProcessingStatus("PROCESSING"), VideoStatusProcessing)
+		assert.Equal(t, VideoProcessingStatus("REPROCESSING"), VideoStatusReprocessing)
+		assert.Equal(t, VideoProcessingStatus("FINISHED"), VideoStatusFinished)
+		assert.Equal(t, VideoProcessingStatus("FAILED"), VideoStatusFailed)
 	})
 
 	t.Run("should convert status to string correctly", func(t *testing.T) {
-		assert.Equal(t, "uploaded", string(VideoStatusUploaded))
-		assert.Equal(t, "processing", string(VideoStatusProcessing))
-		assert.Equal(t, "reprocessing", string(VideoStatusReprocessing))
-		assert.Equal(t, "finished", string(VideoStatusFinished))
-		assert.Equal(t, "failed", string(VideoStatusFailed))
+		assert.Equal(t, "UPLOADED", string(VideoStatusUploaded))
+		assert.Equal(t, "PROCESSING", string(VideoStatusProcessing))
+		assert.Equal(t, "REPROCESSING", string(VideoStatusReprocessing))
+		assert.Equal(t, "FINISHED", string(VideoStatusFinished))
+		assert.Equal(t, "FAILED", string(VideoStatusFailed))
 	})
 }
 
@@ -61,7 +61,7 @@ func TestVideoStatusPayload(t *testing.T) {
 		// Arrange
 		expectedVideoId := int64(123)
 		expectedUserId := int64(456)
-		expectedStatus := "processing"
+		expectedStatus := "PROCESSING"
 		expectedOccurredAt := time.Now()
 
 		// Act
