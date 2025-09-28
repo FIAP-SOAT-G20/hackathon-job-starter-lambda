@@ -10,7 +10,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type LambdaConfig struct {
+type Config struct {
 
 	// Environment
 	Environment string
@@ -41,7 +41,9 @@ type LambdaConfig struct {
 		SNS             struct {
 			TopicArn string
 		}
-		AccountId string
+		SQS struct {
+			QueueURL string
+		}
 	}
 }
 
@@ -52,7 +54,7 @@ type JobConfig struct {
 	UserId    int64
 }
 
-func LoadLambdaConfig() *LambdaConfig {
+func LoadLambdaConfig() *Config {
 	if err := godotenv.Load(); err != nil && !os.IsNotExist(err) {
 		log.Printf("Warning: .env file not found or error loading it: %v", err)
 	}
@@ -82,10 +84,10 @@ func LoadLambdaConfig() *LambdaConfig {
 	awsRegion := getEnv("AWS_REGION", "us-east-1")
 	awsAccessKey := getEnv("AWS_ACCESS_KEY_ID", "")
 	awsSecretAccessKey := getEnv("AWS_SECRET_ACCESS_KEY", "")
-	awsAccountId := getEnv("AWS_ACCOUNT_ID", "")
 	awsSnsTopicArn := getEnv("AWS_SNS_TOPIC_ARN", "")
+	awsSqsQueueURL := getEnv("AWS_SQS_QUEUE_URL", "")
 	awsSessionToken := getEnv("AWS_SESSION_TOKEN", "")
-	config := &LambdaConfig{}
+	config := &Config{}
 
 	config.Environment = environment
 	config.K8S.Namespace = k8sNamespace
@@ -100,8 +102,8 @@ func LoadLambdaConfig() *LambdaConfig {
 	config.AWS.Region = awsRegion
 	config.AWS.AccessKey = awsAccessKey
 	config.AWS.SecretAccessKey = awsSecretAccessKey
-	config.AWS.AccountId = awsAccountId
 	config.AWS.SNS.TopicArn = awsSnsTopicArn
+	config.AWS.SQS.QueueURL = awsSqsQueueURL
 	config.AWS.SessionToken = awsSessionToken
 	return config
 }

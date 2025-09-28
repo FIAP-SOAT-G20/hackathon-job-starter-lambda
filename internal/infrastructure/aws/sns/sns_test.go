@@ -13,7 +13,7 @@ func TestSNS_Publish(t *testing.T) {
 		// For now, we'll test the parameter handling logic
 
 		// Arrange
-		cfg := &myConfig.LambdaConfig{
+		cfg := &myConfig.Config{
 			AWS: struct {
 				Region          string
 				AccessKey       string
@@ -22,7 +22,9 @@ func TestSNS_Publish(t *testing.T) {
 				SNS             struct {
 					TopicArn string
 				}
-				AccountId string
+				SQS struct {
+					QueueURL string
+				}
 			}{
 				Region:          "us-east-1",
 				AccessKey:       "test-access-key",
@@ -32,6 +34,11 @@ func TestSNS_Publish(t *testing.T) {
 					TopicArn string
 				}{
 					TopicArn: "arn:aws:sns:us-east-1:123456789012:test-topic",
+				},
+				SQS: struct {
+					QueueURL string
+				}{
+					QueueURL: "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
 				},
 			},
 		}
@@ -49,7 +56,7 @@ func TestSNS_Publish(t *testing.T) {
 
 	t.Run("should handle empty parameters", func(t *testing.T) {
 		// Arrange
-		cfg := &myConfig.LambdaConfig{
+		cfg := &myConfig.Config{
 			AWS: struct {
 				Region          string
 				AccessKey       string
@@ -58,7 +65,9 @@ func TestSNS_Publish(t *testing.T) {
 				SNS             struct {
 					TopicArn string
 				}
-				AccountId string
+				SQS struct {
+					QueueURL string
+				}
 			}{
 				Region:          "us-east-1",
 				AccessKey:       "test-access-key",
@@ -68,6 +77,11 @@ func TestSNS_Publish(t *testing.T) {
 					TopicArn string
 				}{
 					TopicArn: "arn:aws:sns:us-east-1:123456789012:test-topic",
+				},
+				SQS: struct {
+					QueueURL string
+				}{
+					QueueURL: "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
 				},
 			},
 		}
@@ -84,7 +98,7 @@ func TestSNS_Publish(t *testing.T) {
 func TestNewSNS(t *testing.T) {
 	t.Run("should create SNS with valid config", func(t *testing.T) {
 		// Arrange
-		cfg := &myConfig.LambdaConfig{
+		cfg := &myConfig.Config{
 			AWS: struct {
 				Region          string
 				AccessKey       string
@@ -93,7 +107,9 @@ func TestNewSNS(t *testing.T) {
 				SNS             struct {
 					TopicArn string
 				}
-				AccountId string
+				SQS struct {
+					QueueURL string
+				}
 			}{
 				Region:          "us-east-1",
 				AccessKey:       "test-access-key",
@@ -103,6 +119,11 @@ func TestNewSNS(t *testing.T) {
 					TopicArn string
 				}{
 					TopicArn: "arn:aws:sns:us-east-1:123456789012:test-topic",
+				},
+				SQS: struct {
+					QueueURL string
+				}{
+					QueueURL: "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
 				},
 			},
 		}
@@ -126,7 +147,7 @@ func TestNewSNS(t *testing.T) {
 
 	t.Run("should create SNS with empty config", func(t *testing.T) {
 		// Arrange
-		cfg := &myConfig.LambdaConfig{}
+		cfg := &myConfig.Config{}
 
 		// Act
 		sns := NewSNS(cfg)
@@ -143,7 +164,7 @@ func TestNewSNS(t *testing.T) {
 func TestSNSInterface(t *testing.T) {
 	t.Run("should implement SNSInterface", func(t *testing.T) {
 		// Arrange
-		cfg := &myConfig.LambdaConfig{
+		cfg := &myConfig.Config{
 			AWS: struct {
 				Region          string
 				AccessKey       string
@@ -152,7 +173,9 @@ func TestSNSInterface(t *testing.T) {
 				SNS             struct {
 					TopicArn string
 				}
-				AccountId string
+				SQS struct {
+					QueueURL string
+				}
 			}{
 				Region:          "us-east-1",
 				AccessKey:       "test-access-key",
@@ -162,6 +185,11 @@ func TestSNSInterface(t *testing.T) {
 					TopicArn string
 				}{
 					TopicArn: "arn:aws:sns:us-east-1:123456789012:test-topic",
+				},
+				SQS: struct {
+					QueueURL string
+				}{
+					QueueURL: "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
 				},
 			},
 		}

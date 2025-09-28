@@ -11,7 +11,7 @@ type Logger struct {
 	*slog.Logger
 }
 
-func NewLogger(cfg *config.LambdaConfig) *Logger {
+func NewLogger(cfg *config.Config) *Logger {
 	var handler slog.Handler
 
 	if cfg.Environment == "production" {

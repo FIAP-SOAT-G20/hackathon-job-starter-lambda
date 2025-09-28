@@ -17,24 +17,24 @@ var l *logger.Logger
 
 var k8sClient *kubernetes.Clientset
 var k8sAPI *api.K8sAPI
-var cfg *config.LambdaConfig
+var cfg *config.Config
 
 type Infrastructure struct {
-	Context      context.Context
-	K8sAPI       *api.K8sAPI
-	LambdaConfig *config.LambdaConfig
-	JobConfig    *config.JobConfig
-	Logger       *logger.Logger
-	SNS          *sns.SNS
-	S3           *s3.S3
+	Context   context.Context
+	K8sAPI    *api.K8sAPI
+	Config    *config.Config
+	JobConfig *config.JobConfig
+	Logger    *logger.Logger
+	SNS       *sns.SNS
+	S3        *s3.S3
 }
 
 var infrastructure *Infrastructure
 
-// init function is called in a lambda cold start. So, at this moment is initialized
+// init function is called during application startup. So, at this moment is initialized
 // all structures and also the database connection
 func init() {
-	fmt.Println("🟠 Initing lambda")
+	fmt.Println("🟠 Initing SQS consumer application")
 	cfg = config.LoadLambdaConfig()
 	jobConfig := config.LoadJobConfig()
 	l = logger.NewLogger(cfg)
@@ -49,13 +49,13 @@ func init() {
 	k8sAPI = api.NewK8sAPI(k8sClient)
 
 	infrastructure = &Infrastructure{
-		Context:      ctx,
-		K8sAPI:       k8sAPI,
-		LambdaConfig: cfg,
-		JobConfig:    jobConfig,
-		Logger:       l,
-		SNS:          sns.NewSNS(cfg),
-		S3:           s3.NewS3(cfg),
+		Context:   ctx,
+		K8sAPI:    k8sAPI,
+		Config:    cfg,
+		JobConfig: jobConfig,
+		Logger:    l,
+		SNS:       sns.NewSNS(cfg),
+		S3:        s3.NewS3(cfg),
 	}
 
 }
