@@ -122,7 +122,7 @@ func (c *Consumer) processMessages(ctx context.Context) error {
 
 	// Create channels for worker pool
 	messageChan := make(chan types.Message, len(result.Messages))
-	successChan := make(chan string, len(result.Messages)) // receipt handles for successful messages
+	successChan := make(chan string, c.workerPoolSize) // receipt handles for successful messages
 
 	// Start worker pool
 	var wg sync.WaitGroup
