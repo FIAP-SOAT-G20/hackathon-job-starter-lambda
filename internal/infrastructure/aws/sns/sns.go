@@ -17,7 +17,7 @@ type SNS struct {
 	TopicArn string
 }
 
-func NewSNS(cfg *myConfig.LambdaConfig) *SNS {
+func NewSNS(cfg *myConfig.Config) *SNS {
 
 	ctx := context.Background()
 	sdkConfig, err := config.LoadDefaultConfig(ctx, config.WithRegion(cfg.AWS.Region),

@@ -13,7 +13,7 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-func ConnectToK8s(ctx context.Context, logger *logger.Logger, cfg *config.LambdaConfig) (*kubernetes.Clientset, error) {
+func ConnectToK8s(ctx context.Context, logger *logger.Logger, cfg *config.Config) (*kubernetes.Clientset, error) {
 	logger.InfoContext(ctx, "Connecting to k8s")
 
 	var config *rest.Config
