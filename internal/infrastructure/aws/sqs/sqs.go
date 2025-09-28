@@ -212,7 +212,12 @@ func (c *Consumer) processMessageWithRetry(ctx context.Context, message types.Me
 
 			// Exponential backoff: wait 2^attempt seconds
 			backoffDuration := time.Duration(1<<uint(attempt-1)) * time.Second
-			time.Sleep(backoffDuration)
+			select {
+			case <-time.After(backoffDuration):
+				// continue after backoff
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 		}
 
 		if err := c.processMessage(ctx, message); err != nil {
