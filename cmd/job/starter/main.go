@@ -80,18 +80,18 @@ func main() {
 
 			var s3Event S3Event
 			if err := json.Unmarshal([]byte(*message.Body), &s3Event); err != nil {
-				return false, fmt.Errorf("failed to unmarshal S3 event: %s", err.Error())
+				return true, fmt.Errorf("failed to unmarshal S3 event: %s", err.Error())
 			}
 
 			for _, record := range s3Event.Records {
 				err := processS3Record(ctx, infra, record)
 				if err != nil {
 					infra.Logger.Error("Failed to process message", "error", err.Error(), "messageID", *message.MessageId)
-					return false, err
+					return true, err
 				}
 			}
 
-			return true, nil
+			return false, nil
 		})
 		if err != nil {
 			infra.Logger.Error("Failed to receive messages", "error", err.Error())
@@ -174,6 +174,9 @@ func processS3Record(ctx context.Context, infra *infrastructure.Infrastructure, 
 			"VIDEO_KEY":             record.S3.Object.Key,
 			"VIDEO_BUCKET":          record.S3.Bucket.Name,
 			"PROCESSED_BUCKET":      record.S3.Bucket.Name,
+			"VIDEO_ID":              strconv.FormatInt(videoId, 10),
+			"VIDEO_USER_ID":         strconv.FormatInt(userId, 10),
+			"SNS_TOPIC_ARN":         infra.Config.AWS.SNS.TopicArn,
 			"AWS_ACCESS_KEY_ID":     infra.Config.AWS.AccessKey,
 			"AWS_SECRET_ACCESS_KEY": infra.Config.AWS.SecretAccessKey,
 			"AWS_SESSION_TOKEN":     infra.Config.AWS.SessionToken,
