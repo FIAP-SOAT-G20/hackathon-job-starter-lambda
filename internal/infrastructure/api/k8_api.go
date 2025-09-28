@@ -69,7 +69,7 @@ func (k *K8sAPI) CreateJob(ctx context.Context, jobInput *JobInput) error {
 						{
 							Name:            jobInput.JobName,
 							Image:           jobInput.Image,
-							ImagePullPolicy: v1.PullIfNotPresent,
+							ImagePullPolicy: v1.PullAlways,
 							Env:             envVars,
 						},
 					},
