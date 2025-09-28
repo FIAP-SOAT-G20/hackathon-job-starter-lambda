@@ -12,7 +12,7 @@ import (
 	"github.com/FIAP-SOAT-G20/hackathon-job-starter-lambda/internal/infrastructure/config"
 	"github.com/FIAP-SOAT-G20/hackathon-job-starter-lambda/internal/infrastructure/logger"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 )
@@ -64,12 +64,7 @@ type S3Client interface {
 
 // NewConsumer creates a new SQS consumer
 func NewConsumer(ctx context.Context, queueURL string, cfg *config.Config, jobConfig *config.JobConfig, logger *logger.Logger, k8sAPI *api.K8sAPI, s3Client S3Client) (*Consumer, error) {
-	awsCfg, err := awsconfig.LoadDefaultConfig(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load AWS config: %s", err.Error())
-	}
-
-	client := sqs.NewFromConfig(awsCfg)
+	client := sqs.NewFromConfig(aws.Config{Region: cfg.AWS.Region, Credentials: credentials.NewStaticCredentialsProvider(cfg.AWS.AccessKey, cfg.AWS.SecretAccessKey, cfg.AWS.SessionToken)})
 
 	return &Consumer{
 		client:    client,
