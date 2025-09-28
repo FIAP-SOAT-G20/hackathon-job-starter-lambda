@@ -23,7 +23,10 @@ func TestSNS_Publish(t *testing.T) {
 					TopicArn string
 				}
 				SQS struct {
-					QueueURL string
+					QueueURL         string
+					WorkerPoolSize   int
+					MaxMessagesBatch int
+					WaitTimeSeconds  int
 				}
 			}{
 				Region:          "us-east-1",
@@ -36,9 +39,15 @@ func TestSNS_Publish(t *testing.T) {
 					TopicArn: "arn:aws:sns:us-east-1:123456789012:test-topic",
 				},
 				SQS: struct {
-					QueueURL string
+					QueueURL         string
+					WorkerPoolSize   int
+					MaxMessagesBatch int
+					WaitTimeSeconds  int
 				}{
-					QueueURL: "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
+					QueueURL:         "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
+					WorkerPoolSize:   5,
+					MaxMessagesBatch: 10,
+					WaitTimeSeconds:  20,
 				},
 			},
 		}
@@ -66,7 +75,10 @@ func TestSNS_Publish(t *testing.T) {
 					TopicArn string
 				}
 				SQS struct {
-					QueueURL string
+					QueueURL         string
+					WorkerPoolSize   int
+					MaxMessagesBatch int
+					WaitTimeSeconds  int
 				}
 			}{
 				Region:          "us-east-1",
@@ -79,9 +91,15 @@ func TestSNS_Publish(t *testing.T) {
 					TopicArn: "arn:aws:sns:us-east-1:123456789012:test-topic",
 				},
 				SQS: struct {
-					QueueURL string
+					QueueURL         string
+					WorkerPoolSize   int
+					MaxMessagesBatch int
+					WaitTimeSeconds  int
 				}{
-					QueueURL: "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
+					QueueURL:         "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
+					WorkerPoolSize:   5,
+					MaxMessagesBatch: 10,
+					WaitTimeSeconds:  20,
 				},
 			},
 		}
@@ -108,7 +126,10 @@ func TestNewSNS(t *testing.T) {
 					TopicArn string
 				}
 				SQS struct {
-					QueueURL string
+					QueueURL         string
+					WorkerPoolSize   int
+					MaxMessagesBatch int
+					WaitTimeSeconds  int
 				}
 			}{
 				Region:          "us-east-1",
@@ -121,9 +142,15 @@ func TestNewSNS(t *testing.T) {
 					TopicArn: "arn:aws:sns:us-east-1:123456789012:test-topic",
 				},
 				SQS: struct {
-					QueueURL string
+					QueueURL         string
+					WorkerPoolSize   int
+					MaxMessagesBatch int
+					WaitTimeSeconds  int
 				}{
-					QueueURL: "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
+					QueueURL:         "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
+					WorkerPoolSize:   5,
+					MaxMessagesBatch: 10,
+					WaitTimeSeconds:  20,
 				},
 			},
 		}
@@ -174,7 +201,10 @@ func TestSNSInterface(t *testing.T) {
 					TopicArn string
 				}
 				SQS struct {
-					QueueURL string
+					QueueURL         string
+					WorkerPoolSize   int
+					MaxMessagesBatch int
+					WaitTimeSeconds  int
 				}
 			}{
 				Region:          "us-east-1",
@@ -187,9 +217,15 @@ func TestSNSInterface(t *testing.T) {
 					TopicArn: "arn:aws:sns:us-east-1:123456789012:test-topic",
 				},
 				SQS: struct {
-					QueueURL string
+					QueueURL         string
+					WorkerPoolSize   int
+					MaxMessagesBatch int
+					WaitTimeSeconds  int
 				}{
-					QueueURL: "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
+					QueueURL:         "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
+					WorkerPoolSize:   5,
+					MaxMessagesBatch: 10,
+					WaitTimeSeconds:  20,
 				},
 			},
 		}

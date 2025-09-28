@@ -42,7 +42,10 @@ type Config struct {
 			TopicArn string
 		}
 		SQS struct {
-			QueueURL string
+			QueueURL         string
+			WorkerPoolSize   int
+			MaxMessagesBatch int
+			WaitTimeSeconds  int
 		}
 	}
 }
@@ -87,6 +90,23 @@ func LoadLambdaConfig() *Config {
 	awsSnsTopicArn := getEnv("AWS_SNS_TOPIC_ARN", "")
 	awsSqsQueueURL := getEnv("AWS_SQS_QUEUE_URL", "")
 	awsSessionToken := getEnv("AWS_SESSION_TOKEN", "")
+
+	// SQS Consumer settings
+	sqsWorkerPoolSize, err := strconv.Atoi(getEnv("SQS_WORKER_POOL_SIZE", "5"))
+	if err != nil {
+		log.Printf("Warning: SQS_WORKER_POOL_SIZE is not a valid integer: %v. Setting to 5", err)
+		sqsWorkerPoolSize = 5
+	}
+	sqsMaxMessagesBatch, err := strconv.Atoi(getEnv("SQS_MAX_MESSAGES_BATCH", "10"))
+	if err != nil {
+		log.Printf("Warning: SQS_MAX_MESSAGES_BATCH is not a valid integer: %v. Setting to 10", err)
+		sqsMaxMessagesBatch = 10
+	}
+	sqsWaitTimeSeconds, err := strconv.Atoi(getEnv("SQS_WAIT_TIME_SECONDS", "20"))
+	if err != nil {
+		log.Printf("Warning: SQS_WAIT_TIME_SECONDS is not a valid integer: %v. Setting to 20", err)
+		sqsWaitTimeSeconds = 20
+	}
 	config := &Config{}
 
 	config.Environment = environment
@@ -104,6 +124,9 @@ func LoadLambdaConfig() *Config {
 	config.AWS.SecretAccessKey = awsSecretAccessKey
 	config.AWS.SNS.TopicArn = awsSnsTopicArn
 	config.AWS.SQS.QueueURL = awsSqsQueueURL
+	config.AWS.SQS.WorkerPoolSize = sqsWorkerPoolSize
+	config.AWS.SQS.MaxMessagesBatch = sqsMaxMessagesBatch
+	config.AWS.SQS.WaitTimeSeconds = sqsWaitTimeSeconds
 	config.AWS.SessionToken = awsSessionToken
 	return config
 }
