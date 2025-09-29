@@ -53,7 +53,7 @@ func main() {
 		mdcLogger.Info(fmt.Sprintf("Job %s", strings.ToLower(jobStatus)))
 		switch jobStatus {
 		case "Complete":
-			updateVideoStatus(ctx, mdcLogger, videoUsecase, jobConfig, dto.VideoStatusFinished)
+			// This status will be updated by the Video Processor Job
 			os.Exit(0)
 		case "Failed":
 			updateVideoStatus(ctx, mdcLogger, videoUsecase, jobConfig, dto.VideoStatusFailed)
